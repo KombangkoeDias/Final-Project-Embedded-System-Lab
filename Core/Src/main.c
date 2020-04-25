@@ -44,7 +44,7 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-char StartString[] = "Welcome to the HangMan game!! Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n";
+char StartString[] = "Welcome to the HangMan game!! Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n Choose one (type 1 or 2): ";
 char HardVocabularies[50][20] = {
 		"abysmal", "antithetical", "apocryphal", "begrudge", "behoove", "belligerent", "capricious", "chivalrous", "commensurate", "conundrum",
 		"denigrate", "dilapidated", "efficacious", "evenhanded", "exegesis", "forlorn", "frugal", "garrulous", "hackneyed", "idiosyncrasy",
@@ -62,11 +62,15 @@ char MediumVocabularies[50][25] = {
 		"salvage", "subsequent", "substitute", "subsume", "superfluous", "transitory", "trivial", "undermine", "upheaval", "vicarious"
 };
 
-/*
+
 char EasyVocularies[50][25] = {
-		""
+
+		"absolve", "anxious", "apparent", "aspire", "bashful", "blossom", "bold", "catastrophe", "complain", "contrast",
+		"crave", "criticize", "crowded", "dangerous", "deadly", "debate", "degenerate", "demote", "deport", "distinct",
+		"disturb", "endless", "enormous", "escalate", "exile", "exterminate", "fearless", "forever", "fruitful", "immense",
+		"intelligent", "interesting", "large", "minute", "obsessed", "pacific", "partiality", "perceive", "poisonous", "pressing",
+		"pursue", "reckless", "relegate", "renowned", "request", "shade", "stalk", "tiresome", "transparent", "typical"
 };
-*/
 
 /* USER CODE END PV */
 
@@ -123,6 +127,7 @@ int main(void)
   int i = 0;
   int start = 0;
   int state = 0;
+  int Timeout = 1000000;
   while (1)
   {
 	//char newData[5] = {'a','b','c','d','e'};
@@ -132,18 +137,58 @@ int main(void)
 		if (start == 0){
 			start = 1;
 			state = 1;
-			HAL_UART_Transmit(&huart2, StartString , sizeof(StartString), 1000000);
+			HAL_UART_Transmit(&huart2, StartString , sizeof(StartString), Timeout);
 		}
 	}
 	if (state == 1){
-		if (HAL_UART_Receive(&huart2, pData, 1, 1000000) == HAL_OK){
-			if (pData[0] == 2){
+		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
+			if (pData[0] == '1'){
 				state = 2;
-				HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+				char Start[] = "\r\n \r\n Now starting the game! Are you ready? How strong a man are you? Choose one Level: \r\n [1] Easy \r\n [2] Medium \r\n [3] Hard \r\n (type 1 or 2 or 3): ";
+				HAL_UART_Transmit(&huart2, Start, sizeof(Start), Timeout);
+				//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+			}
+			else if (pData[0] == '2'){
+				state = 1;
+				char How[] = "\r\n \r\n This is how you are going to play this game: \r\n [1] You guess the character that you think is in the word \r\n [2] You only have limited guess so choose well \r\n [3] of course if you guess all correct character before the quota runs out, you win!";
+				HAL_UART_Transmit(&huart2, How, sizeof(How), Timeout);
+				//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+				HAL_Delay(2000);
+				char anoStart[] = "\r\n \r\n Already familiar with the rule? \r\n Now let's Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n Choose one (type 1 or 2):";
+				HAL_UART_Transmit(&huart2, anoStart , sizeof(anoStart), Timeout);
+			}
+			else{
+				state = 1;
+				char Error[] = "\r\n \r\n Such a strange person you are, type only 1 or 2 !!!";
+				HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+				char TryAgain[] = "\r\n Now Try again, remember, type only 1 or 2 !!!!";
+				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+			}
+		}
+	}
+	if (state == 2){
+		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
+			if (pData[0] == '1'){
+				state = 3;
+				char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level!";
+				HAL_UART_Transmit(&huart2, easy , sizeof(easy), Timeout);
+			}
+			else if (pData[0] == '2'){
+				char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think!";
+				state = 3;
+				HAL_UART_Transmit(&huart2, middle , sizeof(middle), Timeout);
+			}
+			else if (pData[0] == '3'){
+				state = 3;
+				char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!!";
+				HAL_UART_Transmit(&huart2, Hard , sizeof(Hard), Timeout);
 			}
 			else{
 				state = 2;
-				HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+				char Error[] = "\r\n \r\n Such a strange person you are, type only 1, 2, or 3 !!!";
+				HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+				char TryAgain[] = "\r\n Now Try again, remember, type only 1, 2, or 3 !!!!";
+				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
 			}
 		}
 	}
