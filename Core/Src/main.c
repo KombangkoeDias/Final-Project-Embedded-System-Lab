@@ -48,8 +48,9 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+
 char StartString[] = "Welcome to the HangMan game!! Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n Choose one (type 1 or 2): ";
-char HardVocabularies[50][20] = {
+char HardVocabularies[50][25] = {
 		"abysmal", "antithetical", "apocryphal", "begrudge", "behoove", "belligerent", "capricious", "chivalrous", "commensurate", "conundrum",
 		"denigrate", "dilapidated", "efficacious", "evenhanded", "exegesis", "forlorn", "frugal", "garrulous", "hackneyed", "idiosyncrasy",
 		"imbroglio", "incorrigible", "inscrutable", "intransigent", "juggernaut", "largesse", "lascivious", "malapropism", "malfeasance", "malodorous",
@@ -89,7 +90,29 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+char pData[1]; //hold the user's input
+char word[25]; //hold the random word.
+int start = 0; //start by pushing the button
+int state = 0; //state of the program
+int Timeout = 1000000;
+int size = 0; //size of the random word
+void setVocabularySets(char set[50][25]){
+	state = 3;
+	int k = TIM2->CNT %50;
+	for (int i = 0; i < 25; ++i){
+		if (set[k][i] != NULL){
+			size++;
+		}
+	}
+	//size = sizeof(EasyVocularies[k]);
+	for (int i = 0; i < size; ++i){
+		word[i] = set[k][i];
+	}
+	for (int i = size; i < 25; ++i){
+		word[i] = NULL;
+	}
+	HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
+}
 /* USER CODE END 0 */
 
 /**
@@ -129,17 +152,10 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  char pData[1];
-  char word[25];
-  int i = 0;
-  int start = 0;
-  int state = 0;
-  int Timeout = 1000000;
+
   while (1)
   {
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
-	//char newData[5] = {'a','b','c','d','e'};
-	//pData[0] = newData[i];
 	if (!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
 		while(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 		if (start == 0){
@@ -177,46 +193,19 @@ int main(void)
 	if (state == 2){
 		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
 			if (pData[0] == '1'){
-				state = 3;
-				int k = TIM2->CNT %50;
-				int size = sizeof(EasyVocularies[k]);
-				for (int i = 0; i < size; ++i){
-					word[i] = EasyVocularies[k][i];
-				}
-				for (int i = size; i < 25; ++i){
-					word[i] = NULL;
-				}
 				char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level! \r\n";
 				HAL_UART_Transmit(&huart2, easy , sizeof(easy), Timeout);
-				HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
+				setVocabularySets(EasyVocularies);
 			}
 			else if (pData[0] == '2'){
 				char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think! \r\n";
-				state = 3;
-				int k = TIM2->CNT %50;
-				int size = sizeof(MediumVocabularies[k]);
-				for (int i = 0; i < size; ++i){
-					word[i] = MediumVocabularies[k][i];
-				}
-				for (int i = size; i < 25; ++i){
-					word[i] = NULL;
-				}
 				HAL_UART_Transmit(&huart2, middle , sizeof(middle), Timeout);
-				HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
+				setVocabularySets(MediumVocabularies);
 			}
 			else if (pData[0] == '3'){
-				state = 3;
-				int k = TIM2->CNT %50;
-				int size = sizeof(HardVocabularies[k]);
-				for (int i = 0; i < size; ++i){
-					word[i] = HardVocabularies[k][i];
-				}
-				for (int i = size; i < 25; ++i){
-					word[i] = NULL;
-				}
 				char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!! \r\n";
 				HAL_UART_Transmit(&huart2, Hard , sizeof(Hard), Timeout);
-				HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
+				setVocabularySets(HardVocabularies);
 			}
 			else{
 				state = 2;
@@ -228,12 +217,20 @@ int main(void)
 		}
 	}
 	if (state == 3){
-
+		char StartNow[] = "\r\n \r\n Here are the clue and tips to your words \r\n [1] Your word has ";
+		char Continue[2];
+		state = 7;
+		char EndNow[] = " characters... \r\n [2] try typing vowels first (a,e,i,o,u) ";
+		HAL_UART_Transmit(&huart2, StartNow, sizeof(StartNow), Timeout);
+		sprintf(Continue,"%d", size);
+		HAL_UART_Transmit(&huart2, Continue, sizeof(Continue), Timeout);
+		HAL_UART_Transmit(&huart2, EndNow, sizeof(EndNow), Timeout);
 	}
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
   }
+
   /* USER CODE END 3 */
 }
 

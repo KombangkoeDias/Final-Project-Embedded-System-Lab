@@ -1,6 +1,7 @@
-main.c:99:5:main	512	static
-main.c:244:6:SystemClock_Config	88	static
-main.c:288:13:MX_TIM2_Init	64	static
-main.c:346:13:MX_USART2_UART_Init	8	static
-main.c:379:13:MX_GPIO_Init	48	static
-main.c:415:6:Error_Handler	4	static
+main.c:99:6:setVocabularySets	32	static
+main.c:122:5:main	424	static
+main.c:241:6:SystemClock_Config	88	static
+main.c:285:13:MX_TIM2_Init	64	static
+main.c:343:13:MX_USART2_UART_Init	8	static
+main.c:376:13:MX_GPIO_Init	48	static
+main.c:412:6:Error_Handler	4	static
