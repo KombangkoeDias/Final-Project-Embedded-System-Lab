@@ -23,7 +23,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,6 +43,8 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+TIM_HandleTypeDef htim2;
+
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
@@ -77,6 +81,7 @@ char EasyVocularies[50][25] = {
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -116,6 +121,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_TIM2_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   //HAL_UART_Transmit(&huart2, StartString, sizeof(StartString), 1000000);
@@ -124,12 +130,14 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   char pData[1];
+  char word[25];
   int i = 0;
   int start = 0;
   int state = 0;
   int Timeout = 1000000;
   while (1)
   {
+	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 	//char newData[5] = {'a','b','c','d','e'};
 	//pData[0] = newData[i];
 	if (!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
@@ -170,18 +178,45 @@ int main(void)
 		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
 			if (pData[0] == '1'){
 				state = 3;
-				char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level!";
+				int k = TIM2->CNT %50;
+				int size = sizeof(EasyVocularies[k]);
+				for (int i = 0; i < size; ++i){
+					word[i] = EasyVocularies[k][i];
+				}
+				for (int i = size; i < 25; ++i){
+					word[i] = NULL;
+				}
+				char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level! \r\n";
 				HAL_UART_Transmit(&huart2, easy , sizeof(easy), Timeout);
+				HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
 			}
 			else if (pData[0] == '2'){
-				char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think!";
+				char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think! \r\n";
 				state = 3;
+				int k = TIM2->CNT %50;
+				int size = sizeof(MediumVocabularies[k]);
+				for (int i = 0; i < size; ++i){
+					word[i] = MediumVocabularies[k][i];
+				}
+				for (int i = size; i < 25; ++i){
+					word[i] = NULL;
+				}
 				HAL_UART_Transmit(&huart2, middle , sizeof(middle), Timeout);
+				HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
 			}
 			else if (pData[0] == '3'){
 				state = 3;
-				char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!!";
+				int k = TIM2->CNT %50;
+				int size = sizeof(HardVocabularies[k]);
+				for (int i = 0; i < size; ++i){
+					word[i] = HardVocabularies[k][i];
+				}
+				for (int i = size; i < 25; ++i){
+					word[i] = NULL;
+				}
+				char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!! \r\n";
 				HAL_UART_Transmit(&huart2, Hard , sizeof(Hard), Timeout);
+				HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
 			}
 			else{
 				state = 2;
@@ -191,6 +226,9 @@ int main(void)
 				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
 			}
 		}
+	}
+	if (state == 3){
+
 	}
     /* USER CODE END WHILE */
 
@@ -240,6 +278,64 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 8400;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 50;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 0;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
 }
 
 /**
