@@ -92,27 +92,13 @@ static void MX_USART2_UART_Init(void);
 /* USER CODE BEGIN 0 */
 char pData[1]; //hold the user's input
 char word[25]; //hold the random word.
+char usedCharacter[] = "                          "; //used characters
 int start = 0; //start by pushing the button
 int state = 0; //state of the program
+int mode = 0; //mode of the game (easy,medium,hard)
 int Timeout = 1000000;
 int size = 0; //size of the random word
-void setVocabularySets(char set[50][25]){
-	state = 3;
-	int k = TIM2->CNT %50;
-	for (int i = 0; i < 25; ++i){
-		if (set[k][i] != NULL){
-			size++;
-		}
-	}
-	//size = sizeof(EasyVocularies[k]);
-	for (int i = 0; i < size; ++i){
-		word[i] = set[k][i];
-	}
-	for (int i = size; i < 25; ++i){
-		word[i] = NULL;
-	}
-	HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
-}
+
 /* USER CODE END 0 */
 
 /**
@@ -157,74 +143,42 @@ int main(void)
   {
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 	if (!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
-		while(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
-		if (start == 0){
-			start = 1;
-			state = 1;
-			HAL_UART_Transmit(&huart2, StartString , sizeof(StartString), Timeout);
-		}
+		buttonPushStart();
 	}
 	if (state == 1){
 		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
 			if (pData[0] == '1'){
-				state = 2;
-				char Start[] = "\r\n \r\n Now starting the game! Are you ready? How strong a man are you? Choose one Level: \r\n [1] Easy \r\n [2] Medium \r\n [3] Hard \r\n (type 1 or 2 or 3): ";
-				HAL_UART_Transmit(&huart2, Start, sizeof(Start), Timeout);
-				//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+				startGame();
 			}
 			else if (pData[0] == '2'){
-				state = 1;
-				char How[] = "\r\n \r\n This is how you are going to play this game: \r\n [1] You guess the character that you think is in the word \r\n [2] You only have limited guess so choose well \r\n [3] of course if you guess all correct character before the quota runs out, you win!";
-				HAL_UART_Transmit(&huart2, How, sizeof(How), Timeout);
-				//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
-				HAL_Delay(2000);
-				char anoStart[] = "\r\n \r\n Already familiar with the rule? \r\n Now let's Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n Choose one (type 1 or 2):";
-				HAL_UART_Transmit(&huart2, anoStart , sizeof(anoStart), Timeout);
+				howToPlay();
 			}
 			else{
-				state = 1;
-				char Error[] = "\r\n \r\n Such a strange person you are, type only 1 or 2 !!!";
-				HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
-				char TryAgain[] = "\r\n Now Try again, remember, type only 1 or 2 !!!!";
-				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+				error1();
 			}
 		}
 	}
 	if (state == 2){
 		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
 			if (pData[0] == '1'){
-				char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level! \r\n";
-				HAL_UART_Transmit(&huart2, easy , sizeof(easy), Timeout);
-				setVocabularySets(EasyVocularies);
+				startEasy();
 			}
 			else if (pData[0] == '2'){
-				char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think! \r\n";
-				HAL_UART_Transmit(&huart2, middle , sizeof(middle), Timeout);
-				setVocabularySets(MediumVocabularies);
+				startMedium();
 			}
 			else if (pData[0] == '3'){
-				char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!! \r\n";
-				HAL_UART_Transmit(&huart2, Hard , sizeof(Hard), Timeout);
-				setVocabularySets(HardVocabularies);
+				startHard();
 			}
 			else{
-				state = 2;
-				char Error[] = "\r\n \r\n Such a strange person you are, type only 1, 2, or 3 !!!";
-				HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
-				char TryAgain[] = "\r\n Now Try again, remember, type only 1, 2, or 3 !!!!";
-				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+				error2();
 			}
 		}
 	}
 	if (state == 3){
-		char StartNow[] = "\r\n \r\n Here are the clue and tips to your words \r\n [1] Your word has ";
-		char Continue[2];
-		state = 7;
-		char EndNow[] = " characters... \r\n [2] try typing vowels first (a,e,i,o,u) ";
-		HAL_UART_Transmit(&huart2, StartNow, sizeof(StartNow), Timeout);
-		sprintf(Continue,"%d", size);
-		HAL_UART_Transmit(&huart2, Continue, sizeof(Continue), Timeout);
-		HAL_UART_Transmit(&huart2, EndNow, sizeof(EndNow), Timeout);
+		startNow();
+	}
+	if (state == 4){
+		firstTurn();
 	}
     /* USER CODE END WHILE */
 
@@ -402,7 +356,125 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void setVocabularySets(char set[50][25]){
+	state = 3;
+	int k = TIM2->CNT %50;
+	for (int i = 0; i < 25; ++i){
+		if (set[k][i] != NULL){
+			size++;
+		}
+	}
+	//size = sizeof(EasyVocularies[k]);
+	for (int i = 0; i < size; ++i){
+		word[i] = set[k][i];
+	}
+	for (int i = size; i < 25; ++i){
+		word[i] = NULL;
+	}
+	//HAL_UART_Transmit(&huart2, word, sizeof(word), Timeout);
+}
 
+void startGame(){
+	state = 2;
+	char Start[] = "\r\n \r\n Now starting the game! Are you ready? How strong a man are you? Choose one Level: \r\n [1] Easy \r\n [2] Medium \r\n [3] Hard \r\n (type 1 or 2 or 3): ";
+	HAL_UART_Transmit(&huart2, Start, sizeof(Start), Timeout);
+	//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+}
+
+void howToPlay(){
+	state = 1;
+	char How[] = "\r\n \r\n This is how you are going to play this game: \r\n [1] You guess the character that you think is in the word \r\n [2] You only have limited guess so choose well \r\n [3] of course if you guess all correct character before the quota runs out, you win!";
+	HAL_UART_Transmit(&huart2, How, sizeof(How), Timeout);
+	//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
+	HAL_Delay(2000);
+	char anoStart[] = "\r\n \r\n Already familiar with the rule? \r\n Now let's Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n Choose one (type 1 or 2):";
+	HAL_UART_Transmit(&huart2, anoStart , sizeof(anoStart), Timeout);
+}
+
+void error1(){
+	state = 1;
+	char Error[] = "\r\n \r\n Such a strange person you are, type only 1 or 2 !!!";
+	HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+	char TryAgain[] = "\r\n Now Try again, remember, type only 1 or 2 !!!!";
+	HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+}
+
+void buttonPushStart(){
+	while(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
+	if (start == 0){
+		start = 1;
+		state = 1;
+		HAL_UART_Transmit(&huart2, StartString , sizeof(StartString), Timeout);
+	}
+}
+
+void startEasy(){
+	char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level! \r\n";
+	HAL_UART_Transmit(&huart2, easy , sizeof(easy), Timeout);
+	setVocabularySets(EasyVocularies);
+	mode = 1;
+}
+
+void startMedium(){
+	char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think! \r\n";
+	HAL_UART_Transmit(&huart2, middle , sizeof(middle), Timeout);
+	setVocabularySets(MediumVocabularies);
+	mode = 2;
+}
+
+void startHard(){
+	char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!! \r\n";
+	HAL_UART_Transmit(&huart2, Hard , sizeof(Hard), Timeout);
+	setVocabularySets(HardVocabularies);
+	mode = 3;
+}
+
+void error2(){
+	state = 2;
+	char Error[] = "\r\n \r\n Such a strange person you are, type only 1, 2, or 3 !!!";
+	HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+	char TryAgain[] = "\r\n Now Try again, remember, type only 1, 2, or 3 !!!!";
+	HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+}
+
+void startNow(){
+	char StartNow[] = "\r\n \r\n Here are the clue and tips to your words \r\n [1] Your word has ";
+	char Continue[2];
+	state = 4;
+	char EndNow[] = " characters... \r\n [2] try typing vowels first (a,e,i,o,u) \r\n\r\n Now let's get started, shall we? \r\n \r\n ";
+	HAL_UART_Transmit(&huart2, StartNow, sizeof(StartNow), Timeout);
+	sprintf(Continue,"%d", size);
+	HAL_UART_Transmit(&huart2, Continue, sizeof(Continue), Timeout);
+	HAL_UART_Transmit(&huart2, EndNow, sizeof(EndNow), Timeout);
+}
+
+void firstTurn(){
+	state = 5;
+	char underscore[size*2];
+	char stretchedword[size*2];
+	for (int i = 0; i < size*2; ++i){
+		if (i % 2 == 0){
+			underscore[i] = '_';
+			stretchedword[i] = word[i/2];
+		}
+		else{
+			underscore[i] = ' ';
+			stretchedword[i] = ' ';
+		}
+	}
+
+	//HAL_UART_Transmit(&huart2, stretchedword, size*2, Timeout);
+	HAL_UART_Transmit(&huart2, "\r\n", 4, Timeout);
+	HAL_UART_Transmit(&huart2, " ", 1, Timeout);
+	HAL_UART_Transmit(&huart2, underscore, size*2, Timeout);
+	char after[] = "\r\n \r\n Now choose (or guess) a character that you think is in this word... : ";
+	char format[] = "(%d characters) used characters : ";
+	char HereIsYourWords[sizeof(format)];
+	sprintf(HereIsYourWords,format, size);
+	HAL_UART_Transmit(&huart2, HereIsYourWords, sizeof(HereIsYourWords), Timeout);
+	HAL_UART_Transmit(&huart2, usedCharacter, sizeof(usedCharacter), Timeout);
+	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
+}
 /* USER CODE END 4 */
 
 /**
