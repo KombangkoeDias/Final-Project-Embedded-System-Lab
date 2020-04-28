@@ -182,16 +182,7 @@ int main(void)
 		firstTurn();
 	}
 	if (state == 5){
-		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
-			if (!isdigit(pData[0])){
-				for (int i = 0; i < sizeof(alphabet); ++i){
-					if (pData[0] == alphabet[i]){
-						usedCharacter[i] = pData[0];
-					}
-				}
-				nextTurn();
-			}
-		}
+		continueTurn();
 	}
     /* USER CODE END WHILE */
 
@@ -519,6 +510,36 @@ void nextTurn(){
 	HAL_UART_Transmit(&huart2, HereIsYourWords, sizeof(HereIsYourWords), Timeout);
 	HAL_UART_Transmit(&huart2, usedCharacter, sizeof(usedCharacter), Timeout);
 	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
+}
+
+void continueTurn(){
+	if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
+		int check = 0;
+		if (!isdigit(pData[0])){
+			for (int i = 0; i < sizeof(alphabet); ++i){
+				if (pData[0] == alphabet[i]){
+					usedCharacter[i] = pData[0];
+					check = 1;
+				}
+			}
+			nextTurn();
+			if (check == 0){
+				char Error[] = "\r\n\r\n The word does not have this character for sure!!! \r\n Have you read the how to play guide? \r\n The word does not contain the strange symbol that you type!! \r\n The word contains only a-z";
+				char TryAgain[] = "\r\n Now Try Again!!!";
+				HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+				nextTurn();
+			}
+		}
+		else{
+			char Error[] = "\r\n\r\n The word does not have this character for sure!!! \r\n Have you read the how to play guide? \r\n The word does not contain numbers!! \r\n The word contains only a-z";
+			char TryAgain[] = "\r\n Now Try Again!!!";
+			HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+			HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+			nextTurn();
+		}
+
+	}
 }
 /* USER CODE END 4 */
 
