@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <stdlib.h>
+#include <ctype.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,7 +49,7 @@ TIM_HandleTypeDef htim2;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+char alphabet[] = "abcdefghijklmnopqrstuvwxyz";
 char StartString[] = "Welcome to the HangMan game!! Choose the option that you want :\r\n [1] Start \r\n [2] How to play?? \r\n Choose one (type 1 or 2): ";
 char HardVocabularies[50][25] = {
 		"abysmal", "antithetical", "apocryphal", "begrudge", "behoove", "belligerent", "capricious", "chivalrous", "commensurate", "conundrum",
@@ -179,6 +180,18 @@ int main(void)
 	}
 	if (state == 4){
 		firstTurn();
+	}
+	if (state == 5){
+		if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
+			if (!isdigit(pData[0])){
+				for (int i = 0; i < sizeof(alphabet); ++i){
+					if (pData[0] == alphabet[i]){
+						usedCharacter[i] = pData[0];
+					}
+				}
+				nextTurn();
+			}
+		}
 	}
     /* USER CODE END WHILE */
 
@@ -428,7 +441,7 @@ void startHard(){
 	setVocabularySets(HardVocabularies);
 	mode = 3;
 }
-
+char myword[25];
 void error2(){
 	state = 2;
 	char Error[] = "\r\n \r\n Such a strange person you are, type only 1, 2, or 3 !!!";
@@ -436,7 +449,6 @@ void error2(){
 	char TryAgain[] = "\r\n Now Try again, remember, type only 1, 2, or 3 !!!!";
 	HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
 }
-
 void startNow(){
 	char StartNow[] = "\r\n \r\n Here are the clue and tips to your words \r\n [1] Your word has ";
 	char Continue[2];
@@ -456,6 +468,36 @@ void firstTurn(){
 		if (i % 2 == 0){
 			underscore[i] = '_';
 			stretchedword[i] = word[i/2];
+			myword[i] = '1';
+		}
+		else{
+			underscore[i] = ' ';
+			stretchedword[i] = ' ';
+			myword[i] = '1';
+		}
+	}
+
+	//HAL_UART_Transmit(&huart2, stretchedword, size*2, Timeout);
+	HAL_UART_Transmit(&huart2, myword, size*2, Timeout);
+	HAL_UART_Transmit(&huart2, "\r\n", 4, Timeout);
+	HAL_UART_Transmit(&huart2, " ", 1, Timeout);
+	HAL_UART_Transmit(&huart2, underscore, size*2, Timeout);
+	char after[] = "\r\n \r\n Now choose (or guess) a character that you think is in this word... : ";
+	char format[] = "(%d characters) used characters : ";
+	char HereIsYourWords[sizeof(format)-1];
+	sprintf(HereIsYourWords,format, size);
+	HAL_UART_Transmit(&huart2, HereIsYourWords, sizeof(HereIsYourWords), Timeout);
+	HAL_UART_Transmit(&huart2, usedCharacter, sizeof(usedCharacter), Timeout);
+	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
+}
+
+void nextTurn(){
+	char underscore[size*2];
+	char stretchedword[size*2];
+	for (int i = 0; i < size*2; ++i){
+		if (i % 2 == 0){
+			underscore[i] = '_';
+			stretchedword[i] = word[i/2];
 		}
 		else{
 			underscore[i] = ' ';
@@ -464,12 +506,15 @@ void firstTurn(){
 	}
 
 	//HAL_UART_Transmit(&huart2, stretchedword, size*2, Timeout);
+	HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+	HAL_UART_Transmit(&huart2, " ", 1, Timeout);
+	HAL_UART_Transmit(&huart2, myword, size*2, Timeout);
 	HAL_UART_Transmit(&huart2, "\r\n", 4, Timeout);
 	HAL_UART_Transmit(&huart2, " ", 1, Timeout);
 	HAL_UART_Transmit(&huart2, underscore, size*2, Timeout);
-	char after[] = "\r\n \r\n Now choose (or guess) a character that you think is in this word... : ";
+	char after[] = "\r\n \r\n Now choose (or guess) another character that you think is in this word... : ";
 	char format[] = "(%d characters) used characters : ";
-	char HereIsYourWords[sizeof(format)];
+	char HereIsYourWords[sizeof(format)-1];
 	sprintf(HereIsYourWords,format, size);
 	HAL_UART_Transmit(&huart2, HereIsYourWords, sizeof(HereIsYourWords), Timeout);
 	HAL_UART_Transmit(&huart2, usedCharacter, sizeof(usedCharacter), Timeout);
