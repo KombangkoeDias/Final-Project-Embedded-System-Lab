@@ -459,12 +459,12 @@ void firstTurn(){
 		if (i % 2 == 0){
 			underscore[i] = '_';
 			stretchedword[i] = word[i/2];
-			myword[i] = '1';
+			myword[i] = ' ';
 		}
 		else{
 			underscore[i] = ' ';
 			stretchedword[i] = ' ';
-			myword[i] = '1';
+			myword[i] = ' ';
 		}
 	}
 
@@ -515,6 +515,8 @@ void nextTurn(){
 void continueTurn(){
 	if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
 		int check = 0;
+		int inword = 0;
+		int win = 1;
 		if (!isdigit(pData[0])){
 			for (int i = 0; i < sizeof(alphabet); ++i){
 				if (pData[0] == alphabet[i]){
@@ -522,7 +524,54 @@ void continueTurn(){
 					check = 1;
 				}
 			}
-			nextTurn();
+			if (check) {
+				for (int i = 0; i < size; ++i){
+					if (pData[0] == word[i]){
+						myword[2*i] = pData[0];
+						inword = 1;
+					}
+				}
+			}
+			for (int i = 0; i < size; ++i){
+				if (myword[i*2] == ' '){
+					win = 0;
+				}
+			}
+			if (win) {
+				char win[] = "\r\n \r\n Congratulations you get the whole word right!! ";
+				HAL_UART_Transmit(&huart2, win, sizeof(win), Timeout);
+			}
+			else if (inword){
+				char right[] = "\r\n \r\n You guessed the right character!! ";
+				HAL_UART_Transmit(&huart2, right, sizeof(right), Timeout);
+			}
+			else if (!inword){
+				char wrong[] = "\r\n \r\n Sorry you guessed wrong, but don't worry ";
+				HAL_UART_Transmit(&huart2, wrong, sizeof(wrong), Timeout);
+			}
+			if (!win){
+				nextTurn();
+			}
+			else{
+				char underscore[size*2];
+				char stretchedword[size*2];
+				for (int i = 0; i < size*2; ++i){
+					if (i % 2 == 0){
+						underscore[i] = '_';
+						stretchedword[i] = word[i/2];
+					}
+					else{
+						underscore[i] = ' ';
+						stretchedword[i] = ' ';
+					}
+				}
+
+				//HAL_UART_Transmit(&huart2, stretchedword, size*2, Timeout);
+				HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+				HAL_UART_Transmit(&huart2, " ", 1, Timeout);
+				HAL_UART_Transmit(&huart2, myword, size*2, Timeout);
+				HAL_UART_Transmit(&huart2, "\r\n", 4, Timeout);
+			}
 			if (check == 0){
 				char Error[] = "\r\n\r\n The word does not have this character for sure!!! \r\n Have you read the how to play guide? \r\n The word does not contain the strange symbol that you type!! \r\n The word contains only a-z";
 				char TryAgain[] = "\r\n Now Try Again!!!";

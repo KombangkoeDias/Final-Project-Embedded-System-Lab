@@ -15,5 +15,5 @@ main.c:436:6:error2	136	static
 main.c:443:6:startNow	192	static
 main.c:454:6:firstTurn	200	dynamic
 main.c:485:6:nextTurn	200	dynamic
-main.c:515:6:continueTurn	256	static
-main.c:550:6:Error_Handler	4	static
+main.c:515:6:continueTurn	296	dynamic
+main.c:599:6:Error_Handler	4	static
