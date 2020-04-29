@@ -99,7 +99,7 @@ int state = 0; //state of the program
 int mode = 0; //mode of the game (easy,medium,hard)
 int Timeout = 1000000;
 int size = 0; //size of the random word
-
+int try = 10; //max trial
 /* USER CODE END 0 */
 
 /**
@@ -185,7 +185,9 @@ int main(void)
 		continueTurn();
 	}
     /* USER CODE END WHILE */
+	if (state == 6){
 
+	}
     /* USER CODE BEGIN 3 */
   }
 
@@ -479,6 +481,11 @@ void firstTurn(){
 	sprintf(HereIsYourWords,format, size);
 	HAL_UART_Transmit(&huart2, HereIsYourWords, sizeof(HereIsYourWords), Timeout);
 	HAL_UART_Transmit(&huart2, usedCharacter, sizeof(usedCharacter), Timeout);
+	char Try[2];
+	sprintf(Try,"%d",try);
+	HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+	HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
+	HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
 	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
 }
 
@@ -509,6 +516,11 @@ void nextTurn(){
 	sprintf(HereIsYourWords,format, size);
 	HAL_UART_Transmit(&huart2, HereIsYourWords, sizeof(HereIsYourWords), Timeout);
 	HAL_UART_Transmit(&huart2, usedCharacter, sizeof(usedCharacter), Timeout);
+	char Try[2];
+	sprintf(Try,"%d",try);
+	HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+	HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
+	HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
 	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
 }
 
@@ -525,6 +537,7 @@ void continueTurn(){
 				}
 			}
 			if (check) {
+				try--;
 				for (int i = 0; i < size; ++i){
 					if (pData[0] == word[i]){
 						myword[2*i] = pData[0];
@@ -540,6 +553,17 @@ void continueTurn(){
 			if (win) {
 				char win[] = "\r\n \r\n Congratulations you get the whole word right!! ";
 				HAL_UART_Transmit(&huart2, win, sizeof(win), Timeout);
+			}
+			else if (try == 0){
+				char Try[2];
+				sprintf(Try,"%d",try);
+				HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+				HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
+				HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
+				char lose[] = "\r\n \r\n Sorry, you lose.... \r\n bad luck this time, hope next time you can do better..";
+				HAL_UART_Transmit(&huart2, lose, sizeof(lose), Timeout);
+				state = 6;
+				return;
 			}
 			else if (inword){
 				char right[] = "\r\n \r\n You guessed the right character!! ";
