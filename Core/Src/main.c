@@ -100,6 +100,18 @@ int mode = 0; //mode of the game (easy,medium,hard)
 int Timeout = 1000000;
 int size = 0; //size of the random word
 int try = 10; //max trial
+void resetValues(){
+	for (int i = 0;i < 25; ++i){
+		word[i] = ' ';
+	}
+	for (int i = 0; i < 26; ++i){
+		usedCharacter[i] = ' ';
+	}
+	mode = 0;
+	size = 0;
+	try = 10;
+	start = 0;
+}
 /* USER CODE END 0 */
 
 /**
@@ -144,6 +156,7 @@ int main(void)
   {
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_1);
 	if (!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13)){
+		while(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 		buttonPushStart();
 	}
 	if (state == 1){
@@ -186,7 +199,7 @@ int main(void)
 	}
     /* USER CODE END WHILE */
 	if (state == 6){
-
+		tryAgain();
 	}
     /* USER CODE BEGIN 3 */
   }
@@ -382,7 +395,7 @@ void setVocabularySets(char set[50][25]){
 
 void startGame(){
 	state = 2;
-	char Start[] = "\r\n \r\n Now starting the game! Are you ready? How strong a man are you? Choose one Level: \r\n [1] Easy \r\n [2] Medium \r\n [3] Hard \r\n (type 1 or 2 or 3): ";
+	char Start[] = "\r\n \r\n Now starting the game! Are you ready? How strong are your vocabularies? Choose one Level: \r\n [1] Easy \r\n [2] Medium \r\n [3] Hard \r\n (type 1 or 2 or 3): ";
 	HAL_UART_Transmit(&huart2, Start, sizeof(Start), Timeout);
 	//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
 }
@@ -406,7 +419,6 @@ void error1(){
 }
 
 void buttonPushStart(){
-	while(!HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13));
 	if (start == 0){
 		start = 1;
 		state = 1;
@@ -417,6 +429,7 @@ void buttonPushStart(){
 void startEasy(){
 	char easy[] = " \r\n \r\n Always start small right? Let's see if you can defeat the easiest level! \r\n";
 	HAL_UART_Transmit(&huart2, easy , sizeof(easy), Timeout);
+	HAL_Delay(1800);
 	setVocabularySets(EasyVocularies);
 	mode = 1;
 }
@@ -424,6 +437,7 @@ void startEasy(){
 void startMedium(){
 	char middle[] = "\r\n \r\n Like to choose things in the middle ha? These medium-level vocabularies are not so easy as you would think! \r\n";
 	HAL_UART_Transmit(&huart2, middle , sizeof(middle), Timeout);
+	HAL_Delay(1800);
 	setVocabularySets(MediumVocabularies);
 	mode = 2;
 }
@@ -431,6 +445,7 @@ void startMedium(){
 void startHard(){
 	char Hard[] = "\r\n \r\n Such a brave lad you are!!! This is the toughest of all the levels, don't expect it to be your level!! \r\n";
 	HAL_UART_Transmit(&huart2, Hard , sizeof(Hard), Timeout);
+	HAL_Delay(1800);
 	setVocabularySets(HardVocabularies);
 	mode = 3;
 }
@@ -451,6 +466,7 @@ void startNow(){
 	sprintf(Continue,"%d", size);
 	HAL_UART_Transmit(&huart2, Continue, sizeof(Continue), Timeout);
 	HAL_UART_Transmit(&huart2, EndNow, sizeof(EndNow), Timeout);
+	HAL_Delay(1800);
 }
 
 void firstTurn(){
@@ -486,6 +502,7 @@ void firstTurn(){
 	HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
 	HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
 	HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
+	HAL_Delay(500);
 	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
 }
 
@@ -521,6 +538,7 @@ void nextTurn(){
 	HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
 	HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
 	HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
+	HAL_Delay(500);
 	HAL_UART_Transmit(&huart2, after, sizeof(after), Timeout);
 }
 
@@ -529,14 +547,28 @@ void continueTurn(){
 		int check = 0;
 		int inword = 0;
 		int win = 1;
+		char stretchedword[size*2];
+		for (int i = 0; i < size*2; ++i){
+			if (i % 2 == 0){
+				stretchedword[i] = word[i/2];
+			}
+			else{
+				stretchedword[i] = ' ';
+			}
+		}
 		if (!isdigit(pData[0])){
 			for (int i = 0; i < sizeof(alphabet); ++i){
 				if (pData[0] == alphabet[i]){
-					usedCharacter[i] = pData[0];
-					check = 1;
+					if (usedCharacter[i] == pData[0]){
+						check = 2;
+					}
+					else{
+						usedCharacter[i] = pData[0];
+						check = 1;
+					}
 				}
 			}
-			if (check) {
+			if (check == 1) {
 				try--;
 				for (int i = 0; i < size; ++i){
 					if (pData[0] == word[i]){
@@ -553,6 +585,7 @@ void continueTurn(){
 			if (win) {
 				char win[] = "\r\n \r\n Congratulations you get the whole word right!! ";
 				HAL_UART_Transmit(&huart2, win, sizeof(win), Timeout);
+				HAL_Delay(1000);
 			}
 			else if (try == 0){
 				char Try[2];
@@ -560,18 +593,32 @@ void continueTurn(){
 				HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
 				HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
 				HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
+				HAL_Delay(1000);
 				char lose[] = "\r\n \r\n Sorry, you lose.... \r\n bad luck this time, hope next time you can do better..";
 				HAL_UART_Transmit(&huart2, lose, sizeof(lose), Timeout);
+				HAL_Delay(1000);
+				char reveal[] = "\r\n And the word is.....\r\n \r\n ";
+				HAL_UART_Transmit(&huart2, reveal, sizeof(reveal), Timeout);
+				HAL_Delay(500);
+				HAL_UART_Transmit(&huart2, stretchedword, sizeof(stretchedword), Timeout);
+				HAL_Delay(1000);
 				state = 6;
 				return;
+			}
+			else if (check == 2){
+				char Same[] = "\r\n \r\n You had already entered this character before!! \r\n Well, we are generous, we won't deduct your try... ";
+				HAL_UART_Transmit(&huart2, Same, sizeof(Same), Timeout);
+				HAL_Delay(1800);
 			}
 			else if (inword){
 				char right[] = "\r\n \r\n You guessed the right character!! ";
 				HAL_UART_Transmit(&huart2, right, sizeof(right), Timeout);
+				HAL_Delay(1800);
 			}
 			else if (!inword){
 				char wrong[] = "\r\n \r\n Sorry you guessed wrong, but don't worry ";
 				HAL_UART_Transmit(&huart2, wrong, sizeof(wrong), Timeout);
+				HAL_Delay(1800);
 			}
 			if (!win){
 				nextTurn();
@@ -600,7 +647,9 @@ void continueTurn(){
 				char Error[] = "\r\n\r\n The word does not have this character for sure!!! \r\n Have you read the how to play guide? \r\n The word does not contain the strange symbol that you type!! \r\n The word contains only a-z";
 				char TryAgain[] = "\r\n Now Try Again!!!";
 				HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+				HAL_Delay(1000);
 				HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+				HAL_Delay(1000);
 				nextTurn();
 			}
 		}
@@ -608,10 +657,33 @@ void continueTurn(){
 			char Error[] = "\r\n\r\n The word does not have this character for sure!!! \r\n Have you read the how to play guide? \r\n The word does not contain numbers!! \r\n The word contains only a-z";
 			char TryAgain[] = "\r\n Now Try Again!!!";
 			HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+			HAL_Delay(1000);
 			HAL_UART_Transmit(&huart2, TryAgain, sizeof(TryAgain), Timeout);
+			HAL_Delay(1000);
 			nextTurn();
 		}
 
+	}
+}
+
+void tryAgain(){
+	char question[] = "\r\n \r\n Do you want to try again? \r\n Type y if yes \r\n Type n if no \r\n : ";
+	HAL_UART_Transmit(&huart2, question, sizeof(question), Timeout);
+	if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
+		if (pData[0] == 'y'){
+			resetValues();
+			startGame();
+		}
+		else if (pData[0] == 'n'){
+			HAL_UART_Transmit(&huart2, "\r\n\r\n ", 9, Timeout);
+			resetValues();
+			buttonPushStart();
+		}
+		else{
+			char Error[] = "\r\n How strange a man are you!! Type only y and n [y for yes and n for no] \r\n Now try again... ";
+			HAL_UART_Transmit(&huart2, Error, sizeof(Error), Timeout);
+			HAL_Delay(1000);
+		}
 	}
 }
 /* USER CODE END 4 */
