@@ -99,7 +99,7 @@ int state = 0; //state of the program
 int mode = 0; //mode of the game (easy,medium,hard)
 int Timeout = 1000000;
 int size = 0; //size of the random word
-int try = 10; //max trial
+int try = 8; //max trial
 void resetValues(){
 	for (int i = 0;i < 25; ++i){
 		word[i] = ' ';
@@ -109,7 +109,7 @@ void resetValues(){
 	}
 	mode = 0;
 	size = 0;
-	try = 10;
+	try = 8;
 	start = 0;
 }
 /* USER CODE END 0 */
@@ -569,7 +569,6 @@ void continueTurn(){
 				}
 			}
 			if (check == 1) {
-				try--;
 				for (int i = 0; i < size; ++i){
 					if (pData[0] == word[i]){
 						myword[2*i] = pData[0];
@@ -586,6 +585,7 @@ void continueTurn(){
 				char win[] = "\r\n \r\n Congratulations you get the whole word right!! ";
 				HAL_UART_Transmit(&huart2, win, sizeof(win), Timeout);
 				HAL_Delay(1000);
+				state = 6;
 			}
 			else if (try == 0){
 				char Try[2];
@@ -611,12 +611,13 @@ void continueTurn(){
 				HAL_Delay(1800);
 			}
 			else if (inword){
-				char right[] = "\r\n \r\n You guessed the right character!! ";
+				char right[] = "\r\n \r\n Congrats! You guessed the right character!! Your try won't be deduced";
 				HAL_UART_Transmit(&huart2, right, sizeof(right), Timeout);
 				HAL_Delay(1800);
 			}
 			else if (!inword){
-				char wrong[] = "\r\n \r\n Sorry you guessed wrong, but don't worry ";
+				try--;
+				char wrong[] = "\r\n \r\n Sorry you guessed wrong, \r\n but don't worry, you can try again whenever your try is still avaiable. ";
 				HAL_UART_Transmit(&huart2, wrong, sizeof(wrong), Timeout);
 				HAL_Delay(1800);
 			}
