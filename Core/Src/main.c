@@ -198,9 +198,7 @@ int main(void)
 		continueTurn();
 	}
     /* USER CODE END WHILE */
-	if (state == 6){
-		tryAgain();
-	}
+
     /* USER CODE BEGIN 3 */
   }
 
