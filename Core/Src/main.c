@@ -198,7 +198,9 @@ int main(void)
 		continueTurn();
 	}
     /* USER CODE END WHILE */
-
+	if (state == 6){
+		tryAgain();
+	}
     /* USER CODE BEGIN 3 */
   }
 
@@ -400,7 +402,7 @@ void startGame(){
 
 void howToPlay(){
 	state = 1;
-	char How[] = "\r\n \r\n This is how you are going to play this game: \r\n [1] You guess the character that you think is in the word \r\n [2] You only have limited guess so choose well \r\n [3] of course if you guess all correct character before the quota runs out, you win!";
+	char How[] = "\r\n \r\n This is how you are going to play this game: \r\n [1] You guess a character that you think is in the word \r\n [2] You only have limited guess (8) so choose well \r\n [3] of course if you guess all correct character before the quota runs out, you win!";
 	HAL_UART_Transmit(&huart2, How, sizeof(How), Timeout);
 	//HAL_UART_Transmit(&huart2, pData, 1, 1000000);
 	HAL_Delay(2000);
@@ -585,24 +587,6 @@ void continueTurn(){
 				HAL_Delay(1000);
 				state = 6;
 			}
-			else if (try == 0){
-				char Try[2];
-				sprintf(Try,"%d",try);
-				HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
-				HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
-				HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
-				HAL_Delay(1000);
-				char lose[] = "\r\n \r\n Sorry, you lose.... \r\n bad luck this time, hope next time you can do better..";
-				HAL_UART_Transmit(&huart2, lose, sizeof(lose), Timeout);
-				HAL_Delay(1000);
-				char reveal[] = "\r\n And the word is.....\r\n \r\n ";
-				HAL_UART_Transmit(&huart2, reveal, sizeof(reveal), Timeout);
-				HAL_Delay(500);
-				HAL_UART_Transmit(&huart2, stretchedword, sizeof(stretchedword), Timeout);
-				HAL_Delay(1000);
-				state = 6;
-				return;
-			}
 			else if (check == 2){
 				char Same[] = "\r\n \r\n You had already entered this character before!! \r\n Well, we are generous, we won't deduct your try... ";
 				HAL_UART_Transmit(&huart2, Same, sizeof(Same), Timeout);
@@ -614,33 +598,60 @@ void continueTurn(){
 				HAL_Delay(1800);
 			}
 			else if (!inword){
-				try--;
-				char wrong[] = "\r\n \r\n Sorry you guessed wrong, \r\n but don't worry, you can try again whenever your try is still avaiable. ";
-				HAL_UART_Transmit(&huart2, wrong, sizeof(wrong), Timeout);
-				HAL_Delay(1800);
-			}
-			if (!win){
-				nextTurn();
-			}
-			else{
-				char underscore[size*2];
-				char stretchedword[size*2];
-				for (int i = 0; i < size*2; ++i){
-					if (i % 2 == 0){
-						underscore[i] = '_';
-						stretchedword[i] = word[i/2];
-					}
-					else{
-						underscore[i] = ' ';
-						stretchedword[i] = ' ';
+				if (check != 0)
+					try--;
+				if (try == 0){
+					char Try[2];
+					sprintf(Try,"%d",try);
+					HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+					HAL_UART_Transmit(&huart2, " Try left: ", 11, Timeout);
+					HAL_UART_Transmit(&huart2, Try, sizeof(Try), Timeout);
+					HAL_Delay(1000);
+					char lose[] = "\r\n \r\n Sorry, you lose.... \r\n bad luck this time, hope next time you can do better..";
+					HAL_UART_Transmit(&huart2, lose, sizeof(lose), Timeout);
+					HAL_Delay(1000);
+					char reveal[] = "\r\n And the word is.....\r\n \r\n ";
+					HAL_UART_Transmit(&huart2, reveal, sizeof(reveal), Timeout);
+					HAL_Delay(500);
+					HAL_UART_Transmit(&huart2, stretchedword, sizeof(stretchedword), Timeout);
+					HAL_Delay(1000);
+					state = 6;
+					return;
+				}
+				else{
+					if (check != 0)
+					{
+						char wrong[] = "\r\n \r\n Sorry you guessed wrong, \r\n but don't worry, you can try again whenever your try is still avaiable. ";
+						HAL_UART_Transmit(&huart2, wrong, sizeof(wrong), Timeout);
+						HAL_Delay(1800);
 					}
 				}
 
-				//HAL_UART_Transmit(&huart2, stretchedword, size*2, Timeout);
-				HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
-				HAL_UART_Transmit(&huart2, " ", 1, Timeout);
-				HAL_UART_Transmit(&huart2, myword, size*2, Timeout);
-				HAL_UART_Transmit(&huart2, "\r\n", 4, Timeout);
+			}
+			if (!win && try != 0 && check != 0){
+				nextTurn();
+			}
+			else{
+				if (check != 0){
+					char underscore[size*2];
+					char stretchedword[size*2];
+					for (int i = 0; i < size*2; ++i){
+						if (i % 2 == 0){
+							underscore[i] = '_';
+							stretchedword[i] = word[i/2];
+						}
+						else{
+							underscore[i] = ' ';
+							stretchedword[i] = ' ';
+						}
+					}
+
+					//HAL_UART_Transmit(&huart2, stretchedword, size*2, Timeout);
+					HAL_UART_Transmit(&huart2, "\r\n\r\n", 8, Timeout);
+					HAL_UART_Transmit(&huart2, " ", 1, Timeout);
+					HAL_UART_Transmit(&huart2, myword, size*2, Timeout);
+					HAL_UART_Transmit(&huart2, "\r\n", 4, Timeout);
+				}
 			}
 			if (check == 0){
 				char Error[] = "\r\n\r\n The word does not have this character for sure!!! \r\n Have you read the how to play guide? \r\n The word does not contain the strange symbol that you type!! \r\n The word contains only a-z";
@@ -666,7 +677,7 @@ void continueTurn(){
 }
 
 void tryAgain(){
-	char question[] = "\r\n \r\n Do you want to try again? \r\n Type y if yes \r\n Type n if no \r\n : ";
+	char question[] = "\r\n \r\n Do you want to play again? \r\n Type y if yes \r\n Type n if no \r\n : ";
 	HAL_UART_Transmit(&huart2, question, sizeof(question), Timeout);
 	if (HAL_UART_Receive(&huart2, pData, 1, Timeout) == HAL_OK){
 		if (pData[0] == 'y'){
